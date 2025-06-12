@@ -1,0 +1,90 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 8. 值对象规则
+
+### 8.1 值对象设计规则
+- **规则位置**：`src/FitBites.Domain/ValueObjects`
+- **实现思路**：
+  - 值对象是不可变的
+  - 值对象没有唯一标识
+  - 值对象通过属性值比较相等性
+  - 值对象作为整体替换，不部分修改
+  - 值对象封装相关属性和行为
+- **代码示例**：
+```csharp
+// 值对象基类
+public abstract class ValueObject
+{
+    protected abstract IEnumerable<object> GetEqualityComponents();
+    
+    public override bool Equals(object obj)
+    {
+        if (obj == null || obj.GetType() != GetType())
+            return false;
+            
+        var other = (ValueObject)obj;
+        return GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
+    }
+    
+    public override int GetHashCode()
+    {
+        return GetEqualityComponents()
+            .Select(x => x != null ? x.GetHashCode() : 0)
+            .Aggregate((x, y) => x ^ y);
+    }
+    
+    public static bool operator ==(ValueObject left, ValueObject right)
+    {
+        if (left is null && right is null)
+            return true;
+            
+        if (left is null || right is null)
+            return false;
+            
+        return left.Equals(right);
+    }
+    
+    public static bool operator !=(ValueObject left, ValueObject right)
+    {
+        return !(left == right);
+    }
+}
+
+// 具体值对象
+public class NutrientValue : ValueObject
+{
+    public decimal Amount { get; }
+    public string Unit { get; }
+    
+    public NutrientValue(decimal amount, string unit)
+    {
+        if (amount < 0)
+            throw new DomainException("营养成分含量不能为负数");
+            
+        if (string.IsNullOrEmpty(unit))
+            throw new DomainException("单位不能为空");
+            
+        Amount = amount;
+        Unit = unit;
+    }
+    
+    public NutrientValue ConvertTo(string targetUnit)
+    {
+        // 单位转换逻辑
+        if (Unit == targetUnit)
+            return this;
+            
+        // 实现单位转换...
+        return this;
+    }
+    
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return Amount;
+        yield return Unit;
+    }
+}
+```

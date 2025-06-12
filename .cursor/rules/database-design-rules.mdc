@@ -1,0 +1,59 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 3. 数据库ER图设计规则
+
+### 3.1 数据库设计规则
+- **规则位置**：`docs/database`
+- **实现思路**：
+  - 表名使用复数形式
+  - 主键统一使用Id字段，GUID类型
+  - 外键命名为{实体名}Id
+  - 所有表包含CreatedAt和UpdatedAt字段
+  - 使用软删除而非物理删除
+  - 字典表使用Code字段作为业务键
+- **代码示例**：
+```sql
+CREATE TABLE Users (
+    Id CHAR(36) PRIMARY KEY,
+    UserCode VARCHAR(50) NOT NULL UNIQUE,
+    Username VARCHAR(50) NOT NULL UNIQUE,
+    Password VARCHAR(100) NOT NULL,
+    Phone VARCHAR(20),
+    Nickname VARCHAR(50),
+    Avatar VARCHAR(255),
+    Status TINYINT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME NOT NULL,
+    UpdatedAt DATETIME
+);
+
+CREATE TABLE Families (
+    Id CHAR(36) PRIMARY KEY,
+    FamilyCode VARCHAR(50) NOT NULL UNIQUE,
+    FamilyName VARCHAR(50) NOT NULL,
+    OwnerUserId CHAR(36) NOT NULL,
+    Description VARCHAR(255),
+    Avatar VARCHAR(255),
+    CreatedAt DATETIME NOT NULL,
+    UpdatedAt DATETIME,
+    FOREIGN KEY (OwnerUserId) REFERENCES Users(Id)
+);
+```
+### 3.2 ER图更新规则
+- **规则位置**：`docs/diagrams`
+- **实现思路**：
+  - 使用Mermaid或PlantUML生成ER图
+  - 实体变更时同步更新ER图
+  - ER图包含实体、关系和主要属性
+  - 在README.md中保持ER图更新
+- **代码示例**：
+```mermaid
+classDiagram
+    User "1" --o "多" UserRole : has
+    Role "1" --o "多" UserRole : has
+    User "1" --o "多" Family : owns
+    Family "1" --o "多" FamilyMember : has
+    User "1" --o "多" FamilyMember : belongs to
+```

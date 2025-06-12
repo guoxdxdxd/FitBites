@@ -1,0 +1,102 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 4. 架构ER图设计规则
+
+### 4.1 架构设计规则
+- **规则位置**：`docs/architecture`
+- **实现思路**：
+  - 严格遵循DDD分层架构
+  - 依赖方向：UI -> Application -> Domain <- Infrastructure
+  - 领域层不依赖其他层
+  - 应用层协调领域对象
+  - 基础设施层实现领域接口
+- **代码示例**：
+```csharp
+// 领域层接口
+public interface IUserRepository
+{
+    Task<User> GetByIdAsync(Guid id);
+    Task<User> GetByUsernameAsync(string username);
+    Task AddAsync(User user);
+}
+
+// 基础设施层实现
+public class UserRepository : Repository<User>, IUserRepository
+{
+    public UserRepository(ApplicationDbContext context) : base(context)
+    {
+    }
+    
+    public async Task<User> GetByUsernameAsync(string username)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Username == username);
+    }
+}
+
+// 应用层服务
+public class UserService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    
+    public UserService(IUserRepository userRepository, IUnitOfWork unitOfWork)
+    {
+        _userRepository = userRepository;
+        _unitOfWork = unitOfWork;
+    }
+    
+    public async Task<UserDto> GetUserAsync(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        return user != null ? new UserDto(user) : null;
+    }
+}
+```
+
+### 4.2 架构图更新规则
+- **规则位置**：`docs/diagrams`
+- **实现思路**：
+  - 使用Mermaid或PlantUML生成架构图
+  - 架构变更时同步更新图表
+  - 图表展示分层架构和主要组件
+  - 在README.md中保持架构图更新
+- **代码示例**：
+```mermaid
+classDiagram
+    class UILayer {
+        表示层
+        API Controllers
+        DTOs
+    }
+    
+    class ApplicationLayer {
+        应用服务层
+        ApplicationServices
+        CommandHandlers
+        EventHandlers
+    }
+    
+    class DomainLayer {
+        领域层
+        实体(Entities)
+        值对象(Value Objects)
+        聚合根(Aggregate Roots)
+        领域服务(Domain Services)
+        领域事件(Domain Events)
+    }
+    
+    class InfrastructureLayer {
+        基础设施层
+        Repositories实现
+        数据库访问
+        外部服务集成
+    }
+    
+    UILayer --> ApplicationLayer : 调用
+    ApplicationLayer --> DomainLayer : 依赖
+    ApplicationLayer --> InfrastructureLayer : 使用
+    DomainLayer <-- InfrastructureLayer : 实现接口
+```

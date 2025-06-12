@@ -1,0 +1,123 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 7. 领域事件规则
+
+### 7.1 领域事件设计规则
+- **规则位置**：`src/FitBites.Domain/Events`
+- **实现思路**：
+  - 所有领域事件继承自`DomainEvent`基类
+  - 事件命名遵循"实体名+动作+Event"模式
+  - 事件包含必要的上下文信息
+  - 事件是不可变的
+  - 事件处理器实现`IDomainEventHandler<T>`接口
+- **代码示例**：
+```csharp
+// 领域事件基类
+public abstract class DomainEvent
+{
+    public Guid Id { get; }
+    public DateTime OccurredOn { get; }
+    
+    protected DomainEvent()
+    {
+        Id = Guid.NewGuid();
+        OccurredOn = DateTime.UtcNow;
+    }
+}
+
+// 具体领域事件
+public class UserCreatedEvent : DomainEvent
+{
+    public Guid UserId { get; }
+    
+    public UserCreatedEvent(Guid userId)
+    {
+        UserId = userId;
+    }
+}
+
+// 事件处理器接口
+public interface IDomainEventHandler<in TEvent> where TEvent : DomainEvent
+{
+    Task HandleAsync(TEvent domainEvent);
+}
+
+// 事件处理器实现
+public class UserCreatedEventHandler : IDomainEventHandler<UserCreatedEvent>
+{
+    private readonly IEmailService _emailService;
+    
+    public UserCreatedEventHandler(IEmailService emailService)
+    {
+        _emailService = emailService;
+    }
+    
+    public async Task HandleAsync(UserCreatedEvent domainEvent)
+    {
+        // 处理事件，如发送欢迎邮件
+        await _emailService.SendWelcomeEmailAsync(domainEvent.UserId);
+    }
+}
+```
+### 7.2 领域事件发布规则
+- **规则位置**：`src/FitBites.Infrastructure/Events`
+- **实现思路**：
+  - 聚合根负责添加领域事件
+  - 工作单元负责收集和发布事件
+  - 事务提交后发布事件
+  - 使用事件总线或服务实现事件分发
+  - 支持异步事件处理
+- **代码示例**：
+```csharp
+// 领域事件服务
+public class DomainEventService : IDomainEventService
+{
+    private readonly ILogger<DomainEventService> _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly List<DomainEvent> _events;
+    
+    public DomainEventService(
+        ILogger<DomainEventService> logger,
+        IServiceProvider serviceProvider)
+    {
+        _logger = logger;
+        _serviceProvider = serviceProvider;
+        _events = new List<DomainEvent>();
+    }
+    
+    public void AddEvents(IEnumerable<DomainEvent> events)
+    {
+        _events.AddRange(events);
+    }
+    
+    public async Task PublishEventsAsync()
+    {
+        foreach (var @event in _events)
+        {
+            await PublishEventAsync(@event);
+        }
+        
+        _events.Clear();
+    }
+    
+    private async Task PublishEventAsync(DomainEvent @event)
+    {
+        _logger.LogInformation("Publishing domain event: {EventType}", @event.GetType().Name);
+        
+        var eventType = @event.GetType();
+        var handlerType = typeof(IDomainEventHandler<>).MakeGenericType(eventType);
+        
+        using var scope = _serviceProvider.CreateScope();
+        var handlers = scope.ServiceProvider.GetServices(handlerType);
+        
+        foreach (var handler in handlers)
+        {
+            var method = handlerType.GetMethod("HandleAsync");
+            await (Task)method.Invoke(handler, new object[] { @event });
+        }
+    }
+}
+```

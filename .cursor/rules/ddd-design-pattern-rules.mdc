@@ -1,0 +1,97 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 1. DDD设计模式和充血模型规则
+
+### 1.1 领域驱动设计架构规则
+- **规则位置**：`src/FitBites.Domain`
+- **实现思路**：
+  - 所有实体必须继承自`BaseEntity`或`AggregateRoot`
+  - 聚合根负责管理其边界内的实体和值对象
+  - 领域逻辑必须封装在实体和领域服务中
+  - 聚合间通过ID引用，不直接引用对象
+  - 领域事件用于聚合间通信
+- **代码示例**：
+```csharp
+// 聚合根示例
+public class Recipe : AggregateRoot
+{
+    // 属性
+    public string RecipeName { get; private set; }
+    public string Description { get; private set; }
+    
+    // 构造函数私有化，通过工厂方法创建
+    private Recipe() { }
+    
+    // 工厂方法
+    public static Recipe Create(string name, string description)
+    {
+        var recipe = new Recipe
+        {
+            RecipeName = name,
+            Description = description
+        };
+        
+        // 添加领域事件
+        recipe.AddDomainEvent(new RecipeCreatedEvent(recipe.Id));
+        
+        return recipe;
+    }
+    
+    // 业务方法
+    public void AddIngredient(Guid ingredientId, decimal amount, string unit)
+    {
+        // 业务逻辑
+    }
+}
+```
+
+### 1.2 充血模型规则
+- **规则位置**：`src/FitBites.Domain/Entities`
+- **实现思路**：
+  - 实体必须包含业务行为，不仅是数据容器
+  - 所有状态变更必须通过方法实现，不直接修改属性
+  - 属性使用private set，通过方法修改
+  - 业务规则和约束在实体方法中强制执行
+  - 实体方法名称反映领域语言
+- **代码示例**：
+```csharp
+public class User : AggregateRoot
+{
+    // 属性使用private set
+    public string Username { get; private set; }
+    public string PasswordHash { get; private set; }
+    public UserStatus Status { get; private set; }
+    
+    // 业务方法
+    public void ChangePassword(string newPassword)
+    {
+        // 业务规则验证
+        if (string.IsNullOrEmpty(newPassword))
+            throw new DomainException("密码不能为空");
+            
+        // 密码加密
+        PasswordHash = HashPassword(newPassword);
+        
+        // 添加领域事件
+        AddDomainEvent(new UserPasswordChangedEvent(Id));
+    }
+    
+    public bool VerifyPassword(string password)
+    {
+        return VerifyHash(password, PasswordHash);
+    }
+    
+    // 状态变更方法
+    public void Disable()
+    {
+        if (Status == UserStatus.Disabled)
+            return;
+            
+        Status = UserStatus.Disabled;
+        AddDomainEvent(new UserDisabledEvent(Id));
+    }
+}
+```

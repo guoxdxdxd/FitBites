@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 6. 仓储和工作单元规则
+
+### 6.1 仓储模式规则
+- **规则位置**：`src/FitBites.Domain/IRepositories`和`src/FitBites.Infrastructure/Repositories`
+- **实现思路**：
+  - 为每个聚合根定义仓储接口
+  - 仓储接口定义在领域层
+  - 仓储实现在基础设施层
+  - 使用通用仓储模式减少重复代码
+  - 仓储方法使用异步实现
+- **代码示例**：
+```csharp
+// 领域层仓储接口
+public interface IUserRepository : IRepository<User>
+{
+    Task<User> GetByUsernameAsync(string username);
+    Task<User> GetByPhoneAsync(string phone);
+    Task<bool> ExistsAsync(string username);
+}
+
+// 基础设施层仓储实现
+public class UserRepository : Repository<User>, IUserRepository
+{
+    public UserRepository(ApplicationDbContext context) : base(context)
+    {
+    }
+    
+    public async Task<User> GetByUsernameAsync(string username)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Username == username);
+    }
+    
+    public async Task<User> GetByPhoneAsync(string phone)
+    {
+        return await _dbSet.FirstOrDefaultAsync(u => u.Phone == phone);
+    }
+    
+    public async Task<bool> ExistsAsync(string username)
+    {
+        return await _dbSet.AnyAsync(u => u.Username == username);
+    }
+}
+```
+### 6.2 工作单元规则
+- **规则位置**：`src/FitBites.Core/Interfaces`和`src/FitBites.Infrastructure/UnitOfWork`
+- **实现思路**：
+  - 工作单元管理事务边界
+  - 工作单元负责保存所有更改
+  - 工作单元协调领域事件发布
+  - 事务提交后发布领域事件
+  - 使用异步方法实现
+- **代码示例**：
+```csharp
+// 工作单元接口
+public interface IUnitOfWork : IDisposable
+{
+    IRepository<T> GetRepository<T>() where T : class;
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<IDbContextTransaction> BeginTransactionAsync();
+    Task CommitTransactionAsync(IDbContextTransaction transaction);
+    Task RollbackTransactionAsync();
+}
+
+// 工作单元实现
+// 已实现在UnitOfWork.cs中
+```

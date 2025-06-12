@@ -1,0 +1,100 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 5. 用户身份认证规则
+
+### 5.1 身份认证方案规则
+- **规则位置**：`src/FitBites.API/Program.cs`和`src/FitBites.Infrastructure/Services`
+- **实现思路**：
+  - 使用JWT令牌进行身份验证
+  - 令牌包含用户ID、角色和权限信息
+  - 令牌有效期可配置
+  - 使用HTTPS保护API通信
+  - 实现刷新令牌机制
+- **代码示例**：
+```csharp
+// 配置JWT认证
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
+```
+
+### 5.2 身份认证实现规则
+- **规则位置**：`src/FitBites.Infrastructure/Services/AuthService.cs`
+- **实现思路**：
+  - 实现用户注册、登录、注销功能
+  - 密码使用安全哈希存储
+  - 实现基于角色和权限的授权
+  - 令牌生成和验证逻辑封装
+  - 支持多端登录管理
+- **代码示例**：
+```csharp
+public class AuthService : IAuthService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly JwtSettings _jwtSettings;
+    
+    public AuthService(
+        IUserRepository userRepository,
+        IUnitOfWork unitOfWork,
+        IOptions<JwtSettings> jwtSettings)
+    {
+        _userRepository = userRepository;
+        _unitOfWork = unitOfWork;
+        _jwtSettings = jwtSettings.Value;
+    }
+    
+    public async Task<AuthResult> LoginAsync(string username, string password)
+    {
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null || !user.VerifyPassword(password))
+            return AuthResult.Failed("用户名或密码错误");
+            
+        if (user.Status != UserStatus.Active)
+            return AuthResult.Failed("用户已禁用");
+            
+        var token = GenerateJwtToken(user);
+        return AuthResult.Success(token);
+    }
+    
+    private string GenerateJwtToken(User user)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            // 添加角色和权限声明
+        };
+        
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_jwtSettings.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expires = DateTime.Now.AddMinutes(_jwtSettings.ExpireMinutes);
+        
+        var token = new JwtSecurityToken(
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
+            claims: claims,
+            expires: expires,
+            signingCredentials: creds
+        );
+        
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+}
+```

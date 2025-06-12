@@ -1,0 +1,118 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 2. EFCore实体规则
+
+### 2.1 实体基类规则
+- **规则位置**：`src/FitBites.Domain/BaseEntity.cs`
+- **实现思路**：
+  - 所有实体继承自`BaseEntity`或`AggregateRoot`
+  - 基类提供ID、创建时间、更新时间等通用属性
+  - 基类实现实体相等性比较
+  - 聚合根实现领域事件收集机制
+- **代码示例**：
+```csharp
+// 已实现在BaseEntity.cs中
+```
+
+### 2.2 实体配置规则
+- **规则位置**：`src/FitBites.Infrastructure/Data/Configurations`
+- **实现思路**：
+  - 每个实体类型对应一个配置类
+  - 配置类继承`IEntityTypeConfiguration<T>`
+  - 在配置类中定义表名、主键、索引、关系等
+  - 通过`OnModelCreating`方法应用配置
+- **代码示例**：
+```csharp
+public class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        // 表名
+        builder.ToTable("Users");
+        
+        // 主键
+        builder.HasKey(u => u.Id);
+        
+        // 索引
+        builder.HasIndex(u => u.UserCode).IsUnique();
+        builder.HasIndex(u => u.Username).IsUnique();
+        builder.HasIndex(u => u.Phone);
+        
+        // 属性配置
+        builder.Property(u => u.Username).IsRequired().HasMaxLength(50);
+        builder.Property(u => u.Password).IsRequired().HasMaxLength(100);
+        builder.Property(u => u.Phone).HasMaxLength(20);
+        builder.Property(u => u.Nickname).HasMaxLength(50);
+        builder.Property(u => u.Avatar).HasMaxLength(255);
+        
+        // 忽略非映射属性
+        builder.Ignore(u => u.DomainEvents);
+    }
+}
+```
+
+### 2.3 索引规则
+- **规则位置**：`src/FitBites.Infrastructure/Data/Configurations`
+- **实现思路**：
+  - 为常用查询字段创建索引
+  - 为唯一字段创建唯一索引
+  - 为外键字段创建索引
+  - 为排序字段创建索引
+  - 考虑复合索引提高查询效率
+- **代码示例**：
+```csharp
+// 在实体配置中定义索引
+builder.HasIndex(u => u.UserCode).IsUnique();
+builder.HasIndex(u => u.Username).IsUnique();
+builder.HasIndex(u => u.Phone);
+
+// 复合索引
+builder.HasIndex(r => new { r.FamilyId, r.UserId });
+```
+
+### 2.4 导航属性规则
+- **规则位置**：`src/FitBites.Domain/Entities`
+- **实现思路**：
+  - 聚合根之间通过ID引用，不使用导航属性
+  - 聚合内部实体可以使用导航属性
+  - 导航属性使用集合接口类型（如ICollection）
+  - 在实体配置中定义关系
+- **代码示例**：
+```csharp
+// 实体中定义导航属性
+public class Recipe : AggregateRoot
+{
+    private readonly List<RecipeIngredient> _ingredients = new();
+    private readonly List<RecipeCookingStep> _cookingSteps = new();
+    
+    public IReadOnlyCollection<RecipeIngredient> Ingredients => _ingredients.AsReadOnly();
+    public IReadOnlyCollection<RecipeCookingStep> CookingSteps => _cookingSteps.AsReadOnly();
+    
+    public void AddIngredient(Guid ingredientId, decimal amount, string unit)
+    {
+        var ingredient = new RecipeIngredient(Id, ingredientId, amount, unit);
+        _ingredients.Add(ingredient);
+    }
+}
+
+// 在配置中定义关系
+public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
+{
+    public void Configure(EntityTypeBuilder<Recipe> builder)
+    {
+        // 一对多关系
+        builder.HasMany(r => r.Ingredients)
+               .WithOne()
+               .HasForeignKey(ri => ri.RecipeId)
+               .OnDelete(DeleteBehavior.Cascade);
+               
+        builder.HasMany(r => r.CookingSteps)
+               .WithOne()
+               .HasForeignKey(cs => cs.RecipeId)
+               .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+```

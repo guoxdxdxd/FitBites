@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- **规则位置**：`src/FitBites.API/Controllers`
+- **实现思路**：
+  - 控制器负责处理HTTP请求和响应
+  - 控制器调用应用服务完成业务操作
+  - 控制器处理认证和授权
+  - 控制器实现统一的响应格式
+  - 控制器处理异常并返回适当状态码

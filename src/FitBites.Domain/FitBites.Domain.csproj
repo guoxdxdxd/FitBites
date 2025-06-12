@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\FitBites.Core\FitBites.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="User.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DocumentationFile>bin\Debug\net9.0\FitBites.Domain.xml</DocumentationFile>
+  </PropertyGroup>
+
+</Project>

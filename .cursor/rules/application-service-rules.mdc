@@ -1,0 +1,86 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 9. 应用服务规则
+
+### 9.1 应用服务设计规则
+- **规则位置**：`src/FitBites.Application/Services`
+- **实现思路**：
+  - 应用服务作为领域和表示层的桥梁
+  - 应用服务协调领域对象完成用例
+  - 应用服务不包含业务规则
+  - 应用服务处理事务边界
+  - 应用服务转换DTO和领域对象
+- **代码示例**：
+```csharp
+// 应用服务接口
+public interface IUserApplicationService
+{
+    Task<UserDto> GetUserAsync(Guid id);
+    Task<UserDto> CreateUserAsync(CreateUserDto dto);
+    Task<UserDto> UpdateUserAsync(UpdateUserDto dto);
+    Task DeleteUserAsync(Guid id);
+}
+
+// 应用服务实现
+public class UserApplicationService : IUserApplicationService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    
+    public UserApplicationService(
+        IUserRepository userRepository,
+        IUnitOfWork unitOfWork)
+    {
+        _userRepository = userRepository;
+        _unitOfWork = unitOfWork;
+    }
+    
+    public async Task<UserDto> GetUserAsync(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        return user != null ? new UserDto(user) : null;
+    }
+    
+    public async Task<UserDto> CreateUserAsync(CreateUserDto dto)
+    {
+        // 验证用户名是否已存在
+        if (await _userRepository.ExistsAsync(dto.Username))
+            throw new ApplicationException("用户名已存在");
+            
+        // 创建用户领域对象
+        var user = User.Create(dto.Username, dto.Password, dto.Phone);
+        
+        // 持久化
+        await _userRepository.AddAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+        
+        return new UserDto(user);
+    }
+    
+    public async Task<UserDto> UpdateUserAsync(UpdateUserDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(dto.Id);
+        if (user == null)
+            throw new ApplicationException("用户不存在");
+            
+        // 更新用户信息
+        user.UpdateProfile(dto.Nickname, dto.Avatar);
+        
+        await _unitOfWork.SaveChangesAsync();
+        return new UserDto(user);
+    }
+    
+    public async Task DeleteUserAsync(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null)
+            throw new ApplicationException("用户不存在");
+            
+        user.Disable();
+        await _unitOfWork.SaveChangesAsync();
+    }
+}
+```
