@@ -183,13 +183,14 @@ classDiagram
     
     %% 菜式相关
     class Recipe {
+        <<聚合根>>
         +string RecipeName
         +string ImageUrl
         +string Description
-        +string CuisineType
-        +string CookingMethod
-        +string TasteProfile
-        +string DifficultyLevel
+        +Guid? CuisineId
+        +Guid? CookingMethodId
+        +Guid? TasteId
+        +DifficultyLevel DifficultyLevel
         +int? PrepTime
         +int? CookTime
         +int? Servings
@@ -197,6 +198,18 @@ classDiagram
         +bool Status
         +RecipeSource Source
         +Guid? SourceId
+        +ICollection<RecipeIngredient> Ingredients
+        +ICollection<RecipeCookingStep> CookingSteps
+        +static Create(recipeName, description, cuisineId, cookingMethodId, tasteId, difficultyLevel, source, sourceId)
+        +UpdateBasicInfo(recipeName, description, cuisineId, cookingMethodId, tasteId, difficultyLevel)
+        +SetImage(imageUrl)
+        +SetTimeInfo(prepTime, cookTime, servings)
+        +AddIngredient(RecipeIngredient)
+        +AddCookingStep(RecipeCookingStep)
+        +SetRecommendation(bool)
+        +Enable()
+        +Disable()
+        +GetTotalCookingTime()
     }
     
     class RecipeIngredient {
@@ -210,13 +223,21 @@ classDiagram
     }
     
     class RecipeCookingStep {
+        +Guid Id
         +Guid RecipeId
         +int StepNumber
+        +string Title
         +string Description
         +string ImageUrl
-        +int? Duration
-        +string TimingType
-        +bool? NeedMonitor
+        +string VideoUrl
+        +string IngredientRefs
+        +string ActionType
+        +int? DurationSec
+        +string TemperatureDesc
+        +int? WaitTimeSec
+        +bool? IsOptional
+        +string AiInstruction
+        +Recipe Recipe
     }
     
     %% 菜谱相关
@@ -297,7 +318,6 @@ classDiagram
     EntityBase <|-- IngredientNutritionDict
     EntityBase <|-- IngredientHumanGroup
     EntityBase <|-- IngredientPreprocess
-    EntityBase <|-- HumanGroupDict
     EntityBase <|-- UserHumanGroup
     EntityBase <|-- Recipe
     EntityBase <|-- RecipeIngredient
@@ -463,10 +483,10 @@ classDiagram
     %% 领域层细节
     class AggregateRoot {
         <<抽象类>>
-        +List~DomainEvent~ _domainEvents
+        -List~DomainEvent~ _domainEvents
         +IReadOnlyCollection~DomainEvent~ DomainEvents
-        +AddDomainEvent(DomainEvent)
-        +RemoveDomainEvent(DomainEvent)
+        #AddDomainEvent(DomainEvent)
+        #RemoveDomainEvent(DomainEvent)
         +ClearDomainEvents()
     }
     
@@ -485,9 +505,9 @@ classDiagram
     
     class DomainEvent {
         <<抽象类>>
-        +Guid Id
-        +DateTime OccurredOn
-        +string EventType
+        +Guid Id { get; }
+        +DateTime OccurredOn { get; }
+        +string EventType => GetType().Name
     }
     
     class IDomainEventHandler {
@@ -590,9 +610,13 @@ classDiagram
     
     class NutrientValue {
         <<值对象>>
-        +Amount
-        +Unit
-        +ConvertTo(targetUnit)
+        +Guid NutritionId
+        +string NutritionName
+        +decimal Value
+        +string Unit
+        +static Create(nutritionId, nutritionName, value, unit)
+        +Equals(NutrientValue)
+        +ToString()
     }
     
     %% 层次关系
@@ -888,9 +912,18 @@ classDiagram
         +bool Status
         +RecipeSource Source
         +Guid? SourceId
-        +AddIngredient(ingredient, amount)
-        +AddCookingStep(description)
-        +CalculateNutrition()
+        +ICollection<RecipeIngredient> Ingredients
+        +ICollection<RecipeCookingStep> CookingSteps
+        +static Create(recipeName, description, cuisineId, cookingMethodId, tasteId, difficultyLevel, source, sourceId)
+        +UpdateBasicInfo(recipeName, description, cuisineId, cookingMethodId, tasteId, difficultyLevel)
+        +SetImage(imageUrl)
+        +SetTimeInfo(prepTime, cookTime, servings)
+        +AddIngredient(RecipeIngredient)
+        +AddCookingStep(RecipeCookingStep)
+        +SetRecommendation(bool)
+        +Enable()
+        +Disable()
+        +GetTotalCookingTime()
     }
     
     class RecipeIngredient {
@@ -908,11 +941,18 @@ classDiagram
         +Guid Id
         +Guid RecipeId
         +int StepNumber
+        +string Title
         +string Description
         +string ImageUrl
-        +int? Duration
-        +string TimingType
-        +bool? NeedMonitor
+        +string VideoUrl
+        +string IngredientRefs
+        +string ActionType
+        +int? DurationSec
+        +string TemperatureDesc
+        +int? WaitTimeSec
+        +bool? IsOptional
+        +string AiInstruction
+        +Recipe Recipe
     }
     
     %% 菜谱聚合
@@ -1112,11 +1152,12 @@ flowchart TD
    - 每个事件可以有多个独立的处理器
 
 4. **典型领域事件示例**：
-   - `UserCreatedEvent`：用户创建后触发，用于初始化用户相关资源
-   - `UserLoggedInEvent`：用户登录后触发，用于记录登录历史
-   - `UserRoleAssignedEvent`：角色分配后触发，用于权限缓存更新
-   - `MealPlanCreatedEvent`：菜谱创建后触发，用于执行营养分析
-   - `RecipeCreatedEvent`：菜式创建后触发，用于相关推荐
+   - `UserCreatedEvent`：用户创建后触发，包含UserId、Username和Phone属性
+   - `UserLoggedInEvent`：用户登录后触发，包含UserId和Username属性
+   - `UserRoleAssignedEvent`：角色分配后触发，包含UserId和RoleId属性
+   - `UserPermissionGrantedEvent`：权限授予后触发，包含UserId、PermissionId和ExpireTime属性
+   - `UserRefreshTokenGeneratedEvent`：刷新令牌生成后触发，包含UserId、RefreshToken和ExpireTime属性
+   - `PreferenceChangedEvent`：偏好设置变更后触发，包含相关偏好信息
 
 ### 值对象
 
@@ -1126,11 +1167,14 @@ flowchart TD
    - 包含省份、城市、区县、详细地址、邮编等属性
    - 通过值相等而非引用相等进行比较
    - 不可变性，修改时创建新实例
+   - 提供GetFullAddress()方法获取完整地址字符串
 
 2. **NutrientValue（营养成分值）**：
-   - 包含数量和单位
-   - 支持单位转换
-   - 值相等比较
+   - 包含营养成分ID、名称、数值和单位
+   - 通过静态工厂方法Create创建实例
+   - 实现IEquatable<NutrientValue>接口
+   - 重写Equals、GetHashCode和ToString方法
+   - 实现==和!=运算符
 
 值对象的特点：
 - 不可变性（Immutability）
@@ -1324,4 +1368,78 @@ FitBites系统设计支持业务需求的持续演进：
 
 5. **扩展点**：系统预留了多个扩展点，支持插件式功能增强。
 
-通过领域驱动设计方法，FitBites不仅实现了当前的业务需求，还建立了一个可持续发展、易于维护和扩展的系统架构，为未来的功能迭代和业务增长提供了坚实基础。 
+通过领域驱动设计方法，FitBites不仅实现了当前的业务需求，还建立了一个可持续发展、易于维护和扩展的系统架构，为未来的功能迭代和业务增长提供了坚实基础。
+
+## 2. EFCore实体规则
+
+### 2.1 实体基类规则
+- **规则位置**：`src/FitBites.Domain/BaseEntity.cs`和`src/FitBites.Domain/Entities/Base/EntityBase.cs`
+- **实现思路**：
+  - 所有实体继承自`EntityBase`
+  - 聚合根继承自`AggregateRoot`，而`AggregateRoot`继承自`EntityBase`
+  - 基类提供ID、创建时间、更新时间等通用属性
+  - 基类实现实体相等性比较
+  - 聚合根实现领域事件收集机制
+- **代码示例**：
+```csharp
+// EntityBase基类
+public abstract class EntityBase
+{
+    // 主键ID
+    public Guid Id { get; set; }
+
+    // 创建时间
+    public DateTime CreatedAt { get; set; }
+
+    // 更新时间
+    public DateTime UpdatedAt { get; set; }
+}
+
+// AggregateRoot聚合根基类
+public abstract class AggregateRoot : EntityBase
+{
+    private List<DomainEvent> _domainEvents;
+
+    // 领域事件集合
+    public IReadOnlyCollection<DomainEvent> DomainEvents => _domainEvents?.AsReadOnly();
+
+    // 添加领域事件
+    protected void AddDomainEvent(DomainEvent domainEvent)
+    {
+        _domainEvents ??= new List<DomainEvent>();
+        _domainEvents.Add(domainEvent);
+    }
+
+    // 移除领域事件
+    protected void RemoveDomainEvent(DomainEvent domainEvent)
+    {
+        _domainEvents?.Remove(domainEvent);
+    }
+
+    // 清空领域事件
+    public void ClearDomainEvents()
+    {
+        _domainEvents?.Clear();
+    }
+}
+``` 
+
+## 文档优化说明
+
+本README文档包含了FitBites项目的详细设计和实现说明，但存在以下需要优化的地方：
+
+1. **架构描述重复**：在"系统设计"和"领域驱动设计(DDD)架构"部分存在概念重叠，建议合并这两部分内容。
+
+2. **实体描述重复**：实体关系图中的实体在"聚合与聚合根"部分再次被详细描述，造成信息重复。建议保留一处详细描述，其他地方引用。
+
+3. **ER图与实际代码不一致**：部分实体的属性和方法与实际代码实现不一致，已在本次更新中修正。
+
+4. **领域服务描述重复**：在DDD架构和领域服务部分有重复的服务职责描述，建议合并。
+
+后续优化计划：
+1. 合并重复的架构描述部分
+2. 统一实体描述，确保与代码一致
+3. 简化ER图，保持关键信息
+4. 更新所有示例代码，确保与实际实现一致
+
+请在使用本文档时注意以上事项，并参考最新的代码实现来理解系统设计。 
