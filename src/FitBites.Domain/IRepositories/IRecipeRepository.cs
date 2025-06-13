@@ -107,5 +107,50 @@ namespace FitBites.Domain.IRepositories
         /// <param name="count">获取数量</param>
         /// <returns>菜式列表</returns>
         Task<IEnumerable<Recipe>> GetRecipesByIngredientsAsync(IEnumerable<Guid> ingredientIds, int count = 20);
+
+        /// <summary>
+        /// 根据菜式名称查询菜式
+        /// </summary>
+        Task<Recipe> GetByNameAsync(string recipeName);
+        
+        /// <summary>
+        /// 检查菜式名称是否存在
+        /// </summary>
+        Task<bool> ExistsByNameAsync(string recipeName);
+        
+        /// <summary>
+        /// 根据难度获取菜式列表
+        /// </summary>
+        Task<List<Recipe>> GetRecipesByDifficultyLevelAsync(DifficultyLevel difficultyLevel, int count);
+        
+        /// <summary>
+        /// 根据菜系ID获取菜式列表
+        /// </summary>
+        Task<List<Recipe>> GetRecipesByCuisineAsync(Guid cuisineId, int count);
+        
+        /// <summary>
+        /// 根据烹饪方式ID获取菜式列表
+        /// </summary>
+        Task<List<Recipe>> GetRecipesByCookingMethodAsync(Guid cookingMethodId, int count);
+        
+        /// <summary>
+        /// 根据口味ID获取菜式列表
+        /// </summary>
+        Task<List<Recipe>> GetRecipesByTasteAsync(Guid tasteId, int count);
+        
+        /// <summary>
+        /// 根据来源获取菜式列表
+        /// </summary>
+        Task<List<Recipe>> GetRecipesBySourceAsync(RecipeSource source, Guid? sourceId, int page, int pageSize);
+        
+        /// <summary>
+        /// 搜索菜式
+        /// </summary>
+        Task<List<Recipe>> SearchRecipesAsync(string keyword, int page, int pageSize);
+        
+        /// <summary>
+        /// 获取菜式总数
+        /// </summary>
+        Task<int> GetRecipesCountAsync(RecipeSource? source = null, Guid? sourceId = null, string keyword = null);
     }
 } 

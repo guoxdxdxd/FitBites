@@ -9,7 +9,7 @@ namespace FitBites.Domain.Entities
     /// <summary>
     /// 菜式实体
     /// </summary>
-    public class Recipe : EntityBase
+    public class Recipe : AggregateRoot
     {
         /// <summary>
         /// 菜式名称
@@ -189,11 +189,16 @@ namespace FitBites.Domain.Entities
             };
             
             // 添加领域事件
-            // TODO: 创建并添加RecipeCreatedEvent领域事件
+            recipe.Create();
             
             return recipe;
         }
-        
+
+        public void Create()
+        {
+            AddDomainEvent(new RecipeCreatedEvent(Id));
+        }
+
         /// <summary>
         /// 更新菜式基本信息
         /// </summary>
@@ -212,8 +217,8 @@ namespace FitBites.Domain.Entities
             TasteId = tasteId;
             DifficultyLevel = difficultyLevel;
             UpdatedAt = DateTime.Now;
-            
-            // TODO: 添加RecipeUpdatedEvent领域事件
+
+            AddDomainEvent(new RecipeUpdatedEvent(Id));
         }
         
         /// <summary>
