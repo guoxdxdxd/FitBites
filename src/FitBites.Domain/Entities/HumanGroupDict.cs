@@ -54,5 +54,41 @@ namespace FitBites.Domain.Entities
         /// 食材人群集合
         /// </summary>
         public virtual ICollection<IngredientHumanGroup> IngredientHumanGroups { get; private set; }
+
+        /// <summary>
+        /// 创建一个新的人群标签
+        /// </summary>
+        /// <param name="name">标签名称</param>
+        /// <param name="description">描述说明</param>
+        /// <returns>新创建的人群标签</returns>
+        public static HumanGroupDict Create(string name, string description)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("人群标签名称不能为空", nameof(name));
+
+            return new HumanGroupDict
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Description = description,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+        }
+
+        /// <summary>
+        /// 更新人群标签信息
+        /// </summary>
+        /// <param name="name">标签名称</param>
+        /// <param name="description">描述说明</param>
+        public void Update(string name, string description)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("人群标签名称不能为空", nameof(name));
+
+            Name = name;
+            Description = description;
+            UpdatedAt = DateTime.Now;
+        }
     }
 } 

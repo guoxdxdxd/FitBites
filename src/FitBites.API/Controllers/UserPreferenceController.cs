@@ -15,7 +15,6 @@ namespace FitBites.API.Controllers
     /// 用户偏好控制器
     /// </summary>
     [ApiController]
-    [Authorize]
     [Route("api/[controller]")]
     public class UserPreferenceController : ControllerBase
     {
