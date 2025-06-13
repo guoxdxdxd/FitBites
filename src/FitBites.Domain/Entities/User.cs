@@ -13,7 +13,7 @@ namespace FitBites.Domain.Entities
     /// <summary>
     /// 用户聚合根
     /// </summary>
-    public class User : AggregateRoot
+    public partial class User : AggregateRoot
     {
         /// <summary>
         /// 构造函数，初始化集合
@@ -184,103 +184,7 @@ namespace FitBites.Domain.Entities
         /// </summary>
         public virtual ICollection<PermissionMapping> PermissionMappings { get; private set; }
 
-        /// <summary>
-        /// 获取用户所有有效权限（包括直接权限和角色权限）
-        /// 非数据库字段
-        /// </summary>
-        [NotMapped]
-        public IEnumerable<Permission> AllPermissions
-        {
-            get
-            {
-                var now = DateTime.Now;
-                var permissionSet = new HashSet<Permission>(new PermissionEqualityComparer());
 
-                // 添加用户直接拥有的有效权限
-                foreach (var mapping in PermissionMappings.Where(pm =>
-                             pm.Status && (pm.ExpireTime == null || pm.ExpireTime > now)))
-                {
-                    permissionSet.Add(mapping.Permission);
-                }
-
-                // 添加用户通过角色获得的有效权限
-                foreach (var userRole in UserRoles)
-                {
-                    if (userRole.Role?.PermissionMappings != null)
-                    {
-                        foreach (var mapping in userRole.Role.PermissionMappings.Where(pm =>
-                                     pm.Status && (pm.ExpireTime == null || pm.ExpireTime > now)))
-                        {
-                            permissionSet.Add(mapping.Permission);
-                        }
-                    }
-                }
-
-                return permissionSet;
-            }
-        }
-
-
-        public void AddPermissionMapping(PermissionMapping permissionMapping)
-        {
-            PermissionMappings.Add(permissionMapping);
-            AddDomainEvent(new UserPermissionGrantedEvent(Id, permissionMapping.PermissionId, permissionMapping.ExpireTime));
-        }
-
-
-        /// <summary>
-        /// 获取用户所有角色
-        /// </summary>
-        /// <returns>角色列表</returns>
-        public List<Role> GetRoles()
-        {
-            return UserRoles.Select(ur => ur.Role).ToList();
-        }
-
-        /// <summary>
-        /// 检查用户是否有指定权限
-        /// </summary>
-        /// <param name="permissionCode">权限代码</param>
-        /// <returns>是否有权限</returns>
-        public bool HasPermission(string permissionCode)
-        {
-            return AllPermissions.Any(p => p.PermissionCode == permissionCode);
-        }
-
-        /// <summary>
-        /// 检查用户是否有指定角色
-        /// </summary>
-        /// <param name="roleCode">角色代码</param>
-        /// <returns>是否有角色</returns>
-        public bool HasRole(string roleCode)
-        {
-            return UserRoles.Any(ur => ur.Role?.RoleCode == roleCode);
-        }
-
-        /// <summary>
-        /// 验证密码是否正确
-        /// </summary>
-        /// <param name="password">原始密码</param>
-        /// <returns>验证结果</returns>
-        public bool VerifyPassword(string password)
-        {
-            return Password == EncryptPassword(password);
-        }
-
-        public void Login()
-        {
-            AddDomainEvent(new UserLoggedInEvent(Id, Username));
-        }
-
-        /// <summary>
-        /// 更改密码
-        /// </summary>
-        /// <param name="newPassword">新密码</param>
-        public void ChangePassword(string newPassword)
-        {
-            Password = EncryptPassword(newPassword);
-            UpdatedAt = DateTime.Now;
-        }
 
         /// <summary>
         /// 更新用户基本信息
@@ -294,19 +198,7 @@ namespace FitBites.Domain.Entities
             UpdatedAt = DateTime.Now;
         }
 
-        /// <summary>
-        /// 添加角色
-        /// </summary>
-        /// <param name="role">角色</param>
-        public void AddRole(Role role)
-        {
-            if (!UserRoles.Any(ur => ur.RoleId == role.Id))
-            {
-                UserRoles.Add(new UserRole(Id, role.Id));
-                
-                AddDomainEvent(new UserRoleAssignedEvent(Id, role.Id));
-            }
-        }
+
 
         /// <summary>
         /// 创建用户并触发用户创建事件
@@ -371,40 +263,7 @@ namespace FitBites.Domain.Entities
             }
         }
 
-        /// <summary>
-        /// 生成新的刷新令牌
-        /// </summary>
-        /// <param name="expireTime">过期时间</param>
-        public void GenerateRefreshToken(DateTime expireTime)
-        {
-            RefreshToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-            RefreshTokenExpireTime = expireTime;
-            UpdatedAt = DateTime.Now;
-            
-            AddDomainEvent(new UserRefreshTokenGeneratedEvent(Id, RefreshToken, RefreshTokenExpireTime));
-        }
-        
-        /// <summary>
-        /// 验证刷新令牌是否有效
-        /// </summary>
-        /// <param name="refreshToken">刷新令牌</param>
-        /// <returns>是否有效</returns>
-        public bool ValidateRefreshToken(string refreshToken)
-        {
-            return RefreshToken == refreshToken && 
-                   RefreshTokenExpireTime.HasValue && 
-                   RefreshTokenExpireTime.Value > DateTime.UtcNow;
-        }
-        
-        /// <summary>
-        /// 撤销刷新令牌
-        /// </summary>
-        public void RevokeRefreshToken()
-        {
-            RefreshToken = null;
-            RefreshTokenExpireTime = null;
-            UpdatedAt = DateTime.Now;
-        }
+
         
         /// <summary>
         /// 生成随机用户编码
@@ -432,215 +291,8 @@ namespace FitBites.Domain.Entities
             return $"{prefix}{noun}{random.Next(10, 100)}";
         }
         
-        /// <summary>
-        /// 添加用户偏好
-        /// </summary>
-        /// <param name="targetType">偏好对象类型</param>
-        /// <param name="targetId">偏好对象ID</param>
-        /// <param name="preferenceType">偏好类型</param>
-        /// <param name="remark">备注</param>
-        /// <returns>添加的用户偏好</returns>
-        public UserPreference AddPreference(PreferenceTargetType targetType, Guid targetId, PreferenceType preferenceType, string remark = "")
-        {
-            // 检查是否已存在相同偏好
-            var existingPreference = UserPreferences.FirstOrDefault(p => 
-                p.TargetType == targetType && 
-                p.TargetId == targetId && 
-                p.PreferenceType == preferenceType);
-                
-            if (existingPreference != null)
-            {
-                return existingPreference; // 已存在相同偏好，直接返回
-            }
-            
-            // 创建新的偏好对象
-            var preference = new UserPreference(Id, targetType, targetId, preferenceType, remark);
-            
-            // 添加到用户的偏好集合中
-            UserPreferences.Add(preference);
-            
-            // 触发领域事件
-            AddDomainEvent(new UserPreferenceAddedEvent(Id, preference.Id, targetType, targetId, preferenceType));
-            
-            return preference;
-        }
-        
-        /// <summary>
-        /// 更新用户偏好
-        /// </summary>
-        /// <param name="preferenceId">偏好ID</param>
-        /// <param name="preferenceType">新的偏好类型</param>
-        /// <param name="remark">新的备注</param>
-        /// <returns>是否更新成功</returns>
-        public bool UpdatePreference(Guid preferenceId, PreferenceType preferenceType, string remark)
-        {
-            // 查找指定ID的偏好
-            var preference = UserPreferences.FirstOrDefault(p => p.Id == preferenceId);
-            
-            if (preference == null)
-            {
-                return false; // 偏好不存在，更新失败
-            }
-            
-            // 更新偏好
-            preference.Update(preferenceType, remark);
-            
-            // 触发领域事件
-            AddDomainEvent(new UserPreferenceUpdatedEvent(Id, preference.Id, preference.TargetType, preference.TargetId, preferenceType));
-            
-            return true;
-        }
-        
-        /// <summary>
-        /// 删除用户偏好
-        /// </summary>
-        /// <param name="preferenceId">偏好ID</param>
-        /// <returns>是否删除成功</returns>
-        public bool RemovePreference(Guid preferenceId)
-        {
-            // 查找指定ID的偏好
-            var preference = UserPreferences.FirstOrDefault(p => p.Id == preferenceId);
-            
-            if (preference == null)
-            {
-                return false; // 偏好不存在，删除失败
-            }
-            
-            // 从集合中移除
-            UserPreferences.Remove(preference);
-            
-            // 触发领域事件
-            AddDomainEvent(new UserPreferenceRemovedEvent(Id, preference.Id, preference.TargetType, preference.TargetId));
-            
-            return true;
-        }
-        
-        /// <summary>
-        /// 按类型和目标删除用户偏好
-        /// </summary>
-        /// <param name="targetType">偏好对象类型</param>
-        /// <param name="targetId">偏好对象ID</param>
-        /// <returns>是否删除成功</returns>
-        public bool RemovePreferenceByTarget(PreferenceTargetType targetType, Guid targetId)
-        {
-            // 查找所有匹配的偏好
-            var preferences = UserPreferences.Where(p => 
-                p.TargetType == targetType && 
-                p.TargetId == targetId).ToList();
-                
-            if (!preferences.Any())
-            {
-                return false; // 没有找到匹配的偏好，删除失败
-            }
-            
-            // 从集合中移除所有匹配的偏好
-            foreach (var preference in preferences)
-            {
-                UserPreferences.Remove(preference);
-                
-                // 触发领域事件
-                AddDomainEvent(new UserPreferenceRemovedEvent(Id, preference.Id, targetType, targetId));
-            }
-            
-            return true;
-        }
 
-        /// <summary>
-        /// 添加人群标签
-        /// </summary>
-        /// <param name="groupId">人群标签ID</param>
-        /// <param name="source">来源</param>
-        /// <param name="confidence">置信度</param>
-        /// <returns>添加的用户人群标签</returns>
-        public UserHumanGroup AddHumanGroup(Guid groupId, HumanGroupSource source, decimal? confidence = null)
-        {
-            // 检查是否已存在相同标签
-            var existingGroup = UserHumanGroups.FirstOrDefault(g => g.GroupId == groupId);
-                
-            if (existingGroup != null)
-            {
-                return existingGroup; // 已存在相同标签，直接返回
-            }
-            
-            // 创建新的人群标签映射
-            var userHumanGroup = new UserHumanGroup(Id, groupId, source, confidence);
-            
-            // 添加到用户的人群标签集合中
-            UserHumanGroups.Add(userHumanGroup);
-            
-            // 触发领域事件
-            AddDomainEvent(new UserHumanGroupAddedEvent(Id, groupId, source));
-            
-            return userHumanGroup;
-        }
-        
-        /// <summary>
-        /// 移除人群标签
-        /// </summary>
-        /// <param name="groupId">人群标签ID</param>
-        /// <returns>是否移除成功</returns>
-        public bool RemoveHumanGroup(Guid groupId)
-        {
-            // 查找指定标签ID的映射
-            var userHumanGroup = UserHumanGroups.FirstOrDefault(g => g.GroupId == groupId);
-            
-            if (userHumanGroup == null)
-            {
-                return false; // 标签不存在，移除失败
-            }
-            
-            // 从集合中移除
-            UserHumanGroups.Remove(userHumanGroup);
-            
-            // 触发领域事件
-            AddDomainEvent(new UserHumanGroupRemovedEvent(Id, groupId));
-            
-            return true;
-        }
-        
-        /// <summary>
-        /// 更新人群标签信息
-        /// </summary>
-        /// <param name="groupId">人群标签ID</param>
-        /// <param name="source">新的来源</param>
-        /// <param name="confidence">新的置信度</param>
-        /// <returns>是否更新成功</returns>
-        public bool UpdateHumanGroup(Guid groupId, HumanGroupSource source, decimal? confidence)
-        {
-            // 查找指定标签ID的映射
-            var userHumanGroup = UserHumanGroups.FirstOrDefault(g => g.GroupId == groupId);
-            
-            if (userHumanGroup == null)
-            {
-                return false; // 标签不存在，更新失败
-            }
-            
-            // 更新人群标签信息
-            userHumanGroup.Update(source, confidence);
-            
-            // 触发领域事件
-            AddDomainEvent(new UserHumanGroupUpdatedEvent(Id, groupId, source, confidence));
-            
-            return true;
-        }
-        
-        /// <summary>
-        /// 检查用户是否属于指定人群
-        /// </summary>
-        /// <param name="groupId">人群标签ID</param>
-        /// <returns>是否属于该人群</returns>
-        public bool BelongsToHumanGroup(Guid groupId)
-        {
-            return UserHumanGroups.Any(g => g.GroupId == groupId);
-        }
-        
-        /// <summary>
-        /// 获取用户所有人群标签
-        /// </summary>
-        /// <returns>人群标签列表</returns>
-        public List<HumanGroupDict> GetHumanGroups()
-        {
-            return UserHumanGroups.Select(g => g.HumanGroup).ToList();
-        }
+
+
     }
 }
