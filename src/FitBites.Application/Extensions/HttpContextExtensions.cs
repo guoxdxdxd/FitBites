@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FitBites.Application.DTOs;
 using FitBites.Application.Services;
+using FitBites.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 

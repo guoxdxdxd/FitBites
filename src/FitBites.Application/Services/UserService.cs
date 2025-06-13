@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using FitBites.Application.DTOs;
+using FitBites.Application.Services.Interfaces;
 using FitBites.Core.Constants;
 using FitBites.Core.Interfaces;
 using FitBites.Domain;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FitBites.Application.DTOs;
 using FitBites.Application.Dtos.Preference;
-using FitBites.Application.Services.Preference;
+using FitBites.Application.Services.Interfaces;
 using FitBites.Core.Enums;
 using FitBites.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;

@@ -1,17 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FitBites.Application.Dtos;
 using FitBites.Application.Services.Interfaces;
 using FitBites.Core.Enums;
 using FitBites.Core.Interfaces;
-using FitBites.Domain.Entities;
 using FitBites.Domain.IRepositories;
-using FitBites.Infrastructure.UnitOfWork;
 using Microsoft.Extensions.Logging;
 
-namespace FitBites.Application.Services.Implementations
+namespace FitBites.Application.Services
 {
     /// <summary>
     /// 用户偏好应用服务实现

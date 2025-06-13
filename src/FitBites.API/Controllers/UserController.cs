@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using FitBites.Application.Extensions;
+using FitBites.Application.Services.Interfaces;
 
 namespace FitBites.API.Controllers
 {

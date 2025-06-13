@@ -27,4 +27,8 @@
     <ProjectReference Include="..\..\src\FitBites.Application\FitBites.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
 </Project>

@@ -1,10 +1,8 @@
-using System;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using FitBites.Application.DTOs;
 using FitBites.Core.DependencyInjection;
 
-namespace FitBites.Application.Services
+namespace FitBites.Application.Services.Interfaces
 {
     /// <summary>
     /// 用户服务接口

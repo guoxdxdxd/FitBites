@@ -1,4 +1,4 @@
-using FitBites.Application.Services.Preference;
+using FitBites.Application.Services.Interfaces;
 using FitBites.Core.Enums;
 using FitBites.Domain.Entities;
 using FitBites.Domain.Entities.Base;

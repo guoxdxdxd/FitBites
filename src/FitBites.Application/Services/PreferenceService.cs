@@ -1,8 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FitBites.Application.Dtos.Preference;
+using FitBites.Application.Services.Interfaces;
 using FitBites.Core.Constants;
 using FitBites.Core.Enums;
 using FitBites.Core.Interfaces;
@@ -11,7 +8,7 @@ using FitBites.Domain.Entities.Base;
 using FitBites.Domain.IRepositories;
 using Microsoft.Extensions.Logging;
 
-namespace FitBites.Application.Services.Preference
+namespace FitBites.Application.Services
 {
     /// <summary>
     /// 偏好服务

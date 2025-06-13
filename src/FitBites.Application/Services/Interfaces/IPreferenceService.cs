@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using FitBites.Application.Dtos.Preference;
 using FitBites.Core.DependencyInjection;
 using FitBites.Core.Enums;
 using FitBites.Domain.Entities.Base;
 
-namespace FitBites.Application.Services.Preference
+namespace FitBites.Application.Services.Interfaces
 {
     /// <summary>
     /// 偏好服务接口
