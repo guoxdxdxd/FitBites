@@ -9,7 +9,30 @@ namespace FitBites.Domain.Entities
     /// </summary>
     public class UserHumanGroup : EntityBase
     {
+        /// <summary>
+        /// 默认构造函数
+        /// </summary>
+        protected UserHumanGroup()
+        {
+        }
 
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="userId">用户ID</param>
+        /// <param name="groupId">人群标签ID</param>
+        /// <param name="source">来源</param>
+        /// <param name="confidence">置信度</param>
+        public UserHumanGroup(Guid userId, Guid groupId, HumanGroupSource source, decimal? confidence = null)
+        {
+            Id = Guid.NewGuid();
+            UserId = userId;
+            GroupId = groupId;
+            Source = source;
+            Confidence = confidence;
+            CreatedAt = DateTime.Now;
+            UpdatedAt = DateTime.Now;
+        }
 
         /// <summary>
         /// 用户ID
@@ -31,8 +54,6 @@ namespace FitBites.Domain.Entities
         /// </summary>
         public decimal? Confidence { get; private set; }
 
-
-
         /// <summary>
         /// 用户导航属性
         /// </summary>
@@ -42,5 +63,17 @@ namespace FitBites.Domain.Entities
         /// 人群标签导航属性
         /// </summary>
         public virtual HumanGroupDict HumanGroup { get; private set; }
+
+        /// <summary>
+        /// 更新用户人群标签信息
+        /// </summary>
+        /// <param name="source">来源</param>
+        /// <param name="confidence">置信度</param>
+        public void Update(HumanGroupSource source, decimal? confidence)
+        {
+            Source = source;
+            Confidence = confidence;
+            UpdatedAt = DateTime.Now;
+        }
     }
 } 

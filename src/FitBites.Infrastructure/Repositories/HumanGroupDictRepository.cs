@@ -18,8 +18,8 @@ namespace FitBites.Infrastructure.Repositories
         /// <summary>
         /// 构造函数
         /// </summary>
-        /// <param name="context">数据库上下文</param>
-        public HumanGroupDictRepository(ApplicationDbContext context) : base(context)
+        /// <param name="dbContext">数据库上下文</param>
+        public HumanGroupDictRepository(ApplicationDbContext dbContext) : base(dbContext)
         {
         }
 
@@ -29,7 +29,7 @@ namespace FitBites.Infrastructure.Repositories
         /// <returns>人群标签列表</returns>
         public async Task<List<HumanGroupDict>> GetAllAsync()
         {
-            return await _dbSet.OrderBy(x => x.Name).ToListAsync();
+            return await _dbSet.ToListAsync();
         }
 
         /// <summary>
@@ -49,7 +49,8 @@ namespace FitBites.Infrastructure.Repositories
         /// <returns>人群标签</returns>
         public async Task<HumanGroupDict> GetByNameAsync(string name)
         {
-            return await _dbSet.FirstOrDefaultAsync(x => x.Name == name);
+            return await _dbSet
+                .FirstOrDefaultAsync(g => g.Name == name);
         }
 
         /// <summary>
