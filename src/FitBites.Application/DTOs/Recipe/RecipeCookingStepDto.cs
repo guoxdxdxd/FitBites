@@ -38,6 +38,11 @@ namespace FitBites.Application.DTOs.Recipe
         public string ImageUrl { get; set; }
         
         /// <summary>
+        /// 步骤视频URL
+        /// </summary>
+        public string VideoUrl { get; set; }
+        
+        /// <summary>
         /// 步骤小贴士
         /// </summary>
         public string Tips { get; set; }

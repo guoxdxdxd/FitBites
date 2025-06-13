@@ -49,20 +49,117 @@ namespace FitBites.API.Controllers
         }
         
         /// <summary>
-        /// 创建菜式
+        /// 创建菜式基础信息
         /// </summary>
-        /// <param name="dto">创建菜式DTO</param>
+        /// <param name="dto">创建菜式基础信息DTO</param>
         /// <returns>创建后的菜式</returns>
         [HttpPost]
         [Authorize]
         [ProducesResponseType(typeof(ApiResult<RecipeDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateRecipe(CreateRecipeDto dto)
+        public async Task<IActionResult> CreateRecipe(CreateRecipeBaseDto dto)
         {
             try
             {
-                var recipe = await _recipeService.CreateRecipeAsync(dto);
+                var recipe = await _recipeService.CreateRecipeBaseInfoAsync(dto);
                 return CreatedAtAction(nameof(GetRecipe), new { id = recipe.Id }, ApiResult<RecipeDto>.Success(recipe));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResult<RecipeDto>.Fail(ex.Message));
+            }
+        }
+        
+        /// <summary>
+        /// 批量提交菜式食材
+        /// </summary>
+        /// <param name="id">菜式ID</param>
+        /// <param name="dto">食材列表DTO</param>
+        /// <returns>更新后的菜式</returns>
+        [HttpPost("{id}/ingredients/batch")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResult<RecipeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> BatchAddRecipeIngredients(Guid id, BatchRecipeIngredientsDto dto)
+        {
+            try
+            {
+                var recipe = await _recipeService.BatchAddRecipeIngredientsAsync(id, dto.Ingredients);
+                return Ok(ApiResult<RecipeDto>.Success(recipe));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResult<RecipeDto>.Fail(ex.Message));
+            }
+        }
+        
+        /// <summary>
+        /// 删除菜式食材
+        /// </summary>
+        /// <param name="id">菜式ID</param>
+        /// <param name="ingredientId">食材关联ID</param>
+        /// <returns>更新后的菜式</returns>
+        [HttpDelete("{id}/ingredients/{ingredientId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResult<RecipeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteRecipeIngredient(Guid id, Guid ingredientId)
+        {
+            try
+            {
+                var recipe = await _recipeService.RemoveRecipeIngredientAsync(id, ingredientId);
+                return Ok(ApiResult<RecipeDto>.Success(recipe));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResult<RecipeDto>.Fail(ex.Message));
+            }
+        }
+        
+        /// <summary>
+        /// 修改菜式食材
+        /// </summary>
+        /// <param name="id">菜式ID</param>
+        /// <param name="ingredientId">食材关联ID</param>
+        /// <param name="dto">更新食材DTO</param>
+        /// <returns>更新后的菜式</returns>
+        [HttpPut("{id}/ingredients/{ingredientId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResult<RecipeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateRecipeIngredient(Guid id, Guid ingredientId, UpdateRecipeIngredientDto dto)
+        {
+            try
+            {
+                var recipe = await _recipeService.UpdateRecipeIngredientAsync(id, ingredientId, dto);
+                return Ok(ApiResult<RecipeDto>.Success(recipe));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResult<RecipeDto>.Fail(ex.Message));
+            }
+        }
+        
+        /// <summary>
+        /// 批量提交烹饪步骤（会先清空已有步骤）
+        /// </summary>
+        /// <param name="id">菜式ID</param>
+        /// <param name="dto">烹饪步骤列表DTO</param>
+        /// <returns>更新后的菜式</returns>
+        [HttpPost("{id}/cooking-steps/batch")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResult<RecipeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> BatchAddRecipeCookingSteps(Guid id, BatchRecipeCookingStepsDto dto)
+        {
+            try
+            {
+                var recipe = await _recipeService.ReplaceCookingStepsAsync(id, dto.CookingSteps);
+                return Ok(ApiResult<RecipeDto>.Success(recipe));
             }
             catch (Exception ex)
             {
@@ -319,5 +416,27 @@ namespace FitBites.API.Controllers
         /// 几人份
         /// </summary>
         public int? Servings { get; set; }
+    }
+    
+    /// <summary>
+    /// 批量提交菜式食材DTO
+    /// </summary>
+    public class BatchRecipeIngredientsDto
+    {
+        /// <summary>
+        /// 食材列表
+        /// </summary>
+        public List<CreateRecipeIngredientDto> Ingredients { get; set; } = new List<CreateRecipeIngredientDto>();
+    }
+    
+    /// <summary>
+    /// 批量提交烹饪步骤DTO
+    /// </summary>
+    public class BatchRecipeCookingStepsDto
+    {
+        /// <summary>
+        /// 烹饪步骤列表
+        /// </summary>
+        public List<CreateRecipeCookingStepDto> CookingSteps { get; set; } = new List<CreateRecipeCookingStepDto>();
     }
 }

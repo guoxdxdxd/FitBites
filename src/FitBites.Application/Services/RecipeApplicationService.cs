@@ -120,6 +120,176 @@ namespace FitBites.Application.Services
         }
         
         /// <summary>
+        /// 创建菜式基础信息
+        /// </summary>
+        public async Task<RecipeDto> CreateRecipeBaseInfoAsync(CreateRecipeBaseDto dto)
+        {
+            // 创建菜式
+            var recipe = await _recipeDomainService.CreateRecipeAsync(
+                dto.RecipeName,
+                dto.Description,
+                dto.CuisineId,
+                dto.CookingMethodId,
+                dto.TasteId,
+                dto.DifficultyLevel,
+                dto.Source,
+                dto.SourceId);
+                
+            // 设置图片
+            if (!string.IsNullOrEmpty(dto.ImageUrl))
+            {
+                await _recipeDomainService.SetRecipeImageAsync(recipe, dto.ImageUrl);
+            }
+            
+            // 设置时间信息
+            await _recipeDomainService.SetRecipeTimeInfoAsync(recipe, dto.PrepTime, dto.CookTime, dto.Servings);
+            
+            // 设置推荐状态
+            if (dto.Recommended.HasValue)
+            {
+                await _recipeDomainService.SetRecipeRecommendationAsync(recipe, dto.Recommended.Value);
+            }
+            
+            // 保存到数据库
+            await _recipeRepository.AddAsync(recipe);
+            await _unitOfWork.SaveChangesAsync();
+            
+            // 返回DTO
+            return await MapToRecipeDtoAsync(recipe);
+        }
+        
+        /// <summary>
+        /// 批量添加菜式食材
+        /// </summary>
+        public async Task<RecipeDto> BatchAddRecipeIngredientsAsync(Guid id, List<CreateRecipeIngredientDto> ingredients)
+        {
+            var recipe = await _recipeRepository.GetByIdAsync(id);
+            if (recipe == null)
+            {
+                throw new ApplicationException($"菜式不存在: {id}");
+            }
+            
+            if (ingredients != null && ingredients.Any())
+            {
+                var ingredientTuples = ingredients.Select(i => (
+                    i.IngredientId,
+                    i.Amount,
+                    i.Unit,
+                    i.Order,
+                    i.Remark
+                ));
+                
+                await _recipeDomainService.AddRecipeIngredientsAsync(recipe, ingredientTuples);
+                
+                // 保存到数据库
+                await _unitOfWork.SaveChangesAsync();
+            }
+            
+            // 返回DTO
+            return await MapToRecipeDtoAsync(recipe);
+        }
+        
+        /// <summary>
+        /// 删除菜式食材
+        /// </summary>
+        public async Task<RecipeDto> RemoveRecipeIngredientAsync(Guid id, Guid ingredientId)
+        {
+            var recipe = await _recipeRepository.GetByIdAsync(id);
+            if (recipe == null)
+            {
+                throw new ApplicationException($"菜式不存在: {id}");
+            }
+            
+            // 找到要删除的食材
+            var recipeIngredient = recipe.Ingredients.FirstOrDefault(i => i.Id == ingredientId);
+            if (recipeIngredient == null)
+            {
+                throw new ApplicationException($"菜式食材不存在: {ingredientId}");
+            }
+            
+            // 删除食材
+            recipe.Ingredients.Remove(recipeIngredient);
+            
+            // 保存到数据库
+            await _unitOfWork.SaveChangesAsync();
+            
+            // 返回DTO
+            return await MapToRecipeDtoAsync(recipe);
+        }
+        
+        /// <summary>
+        /// 更新菜式食材
+        /// </summary>
+        public async Task<RecipeDto> UpdateRecipeIngredientAsync(Guid id, Guid ingredientId, UpdateRecipeIngredientDto dto)
+        {
+            var recipe = await _recipeRepository.GetByIdAsync(id);
+            if (recipe == null)
+            {
+                throw new ApplicationException($"菜式不存在: {id}");
+            }
+            
+            // 找到要更新的食材
+            var recipeIngredient = recipe.Ingredients.FirstOrDefault(i => i.Id == ingredientId);
+            if (recipeIngredient == null)
+            {
+                throw new ApplicationException($"菜式食材不存在: {ingredientId}");
+            }
+            
+            // 由于RecipeIngredient的属性都是私有set的，我们需要删除旧的添加新的
+            recipe.Ingredients.Remove(recipeIngredient);
+            
+            // 创建更新后的食材
+            await _recipeDomainService.AddRecipeIngredientAsync(
+                recipe,
+                recipeIngredient.IngredientId,  // 保持原食材ID
+                dto.Amount,
+                dto.Unit,
+                dto.Order,
+                dto.Remark);
+            
+            // 保存到数据库
+            await _unitOfWork.SaveChangesAsync();
+            
+            // 返回DTO
+            return await MapToRecipeDtoAsync(recipe);
+        }
+        
+        /// <summary>
+        /// 替换所有烹饪步骤
+        /// </summary>
+        public async Task<RecipeDto> ReplaceCookingStepsAsync(Guid id, List<CreateRecipeCookingStepDto> cookingSteps)
+        {
+            var recipe = await _recipeRepository.GetByIdAsync(id);
+            if (recipe == null)
+            {
+                throw new ApplicationException($"菜式不存在: {id}");
+            }
+            
+            // 清空现有烹饪步骤
+            recipe.CookingSteps.Clear();
+            
+            // 添加新的烹饪步骤
+            if (cookingSteps != null && cookingSteps.Any())
+            {
+                var cookingStepTuples = cookingSteps.Select(s => (
+                    s.StepOrder,
+                    s.Title,
+                    s.Description,
+                    s.ImageUrl,
+                    s.Tips
+                ));
+                
+                await _recipeDomainService.AddRecipeCookingStepsAsync(recipe, cookingStepTuples);
+            }
+            
+            // 保存到数据库
+            await _unitOfWork.SaveChangesAsync();
+            
+            // 返回DTO
+            return await MapToRecipeDtoAsync(recipe);
+        }
+        
+        /// <summary>
         /// 更新菜式基本信息
         /// </summary>
         public async Task<RecipeDto> UpdateRecipeBasicInfoAsync(UpdateRecipeDto dto)
@@ -320,16 +490,15 @@ namespace FitBites.Application.Services
         /// </summary>
         public async Task<List<RecipeDto>> GetRecommendedRecipesAsync(int count = 10)
         {
-            // 获取推荐菜式
-            var recipes = await _recipeRepository.GetRecipesBySourceAsync(Core.Enums.RecipeSource.System, null, 1, count);
-            var dtos = new List<RecipeDto>();
+            var recipes = await _recipeRepository.GetRecommendedRecipesAsync(count);
             
+            var result = new List<RecipeDto>();
             foreach (var recipe in recipes)
             {
-                dtos.Add(await MapToRecipeDtoAsync(recipe));
+                result.Add(await MapToRecipeDtoAsync(recipe));
             }
             
-            return dtos;
+            return result;
         }
         
         /// <summary>
@@ -337,31 +506,26 @@ namespace FitBites.Application.Services
         /// </summary>
         public async Task<PaginationResponseDto<RecipeDto>> GetRecipeListAsync(int page = 1, int pageSize = 10, string keyword = null)
         {
-            // 获取总数
-            var totalCount = await _recipeRepository.GetRecipesCountAsync(keyword: keyword);
+            var recipes = await _recipeRepository.GetRecipeListAsync(page, pageSize, keyword);
             
-            // 搜索菜式
-            var recipes = await _recipeRepository.SearchRecipesAsync(keyword, page, pageSize);
-            
-            // 转换为DTO
-            var dtos = new List<RecipeDto>();
-            foreach (var recipe in recipes)
-            {
-                dtos.Add(await MapToRecipeDtoAsync(recipe));
-            }
-            
-            // 返回分页结果
-            return new PaginationResponseDto<RecipeDto>
+            var result = new PaginationResponseDto<RecipeDto>
             {
                 PageIndex = page,
                 PageSize = pageSize,
-                TotalCount = totalCount,
-                Items = dtos
+                TotalCount = recipes.TotalCount,
+                Items = new List<RecipeDto>()
             };
+            
+            foreach (var recipe in recipes.Items)
+            {
+                result.Items.Add(await MapToRecipeDtoAsync(recipe));
+            }
+            
+            return result;
         }
         
         /// <summary>
-        /// 将实体映射为DTO
+        /// 映射实体到DTO
         /// </summary>
         private async Task<RecipeDto> MapToRecipeDtoAsync(Domain.Entities.Recipe recipe)
         {
@@ -454,11 +618,12 @@ namespace FitBites.Application.Services
                         Title = step.Title,
                         Description = step.Description,
                         ImageUrl = step.ImageUrl,
+                        VideoUrl = step.VideoUrl,
                         Tips = step.AiInstruction
                     });
                 }
                 
-                // 按步骤号排序
+                // 按步骤序号排序
                 dto.CookingSteps = dto.CookingSteps.OrderBy(s => s.StepOrder).ToList();
             }
             

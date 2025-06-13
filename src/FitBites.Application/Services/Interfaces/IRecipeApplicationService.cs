@@ -20,6 +20,31 @@ namespace FitBites.Application.Services.Interfaces
         Task<RecipeDto> CreateRecipeAsync(CreateRecipeDto dto);
         
         /// <summary>
+        /// 创建菜式基础信息
+        /// </summary>
+        Task<RecipeDto> CreateRecipeBaseInfoAsync(CreateRecipeBaseDto dto);
+        
+        /// <summary>
+        /// 批量添加菜式食材
+        /// </summary>
+        Task<RecipeDto> BatchAddRecipeIngredientsAsync(Guid id, List<CreateRecipeIngredientDto> ingredients);
+        
+        /// <summary>
+        /// 删除菜式食材
+        /// </summary>
+        Task<RecipeDto> RemoveRecipeIngredientAsync(Guid id, Guid ingredientId);
+        
+        /// <summary>
+        /// 更新菜式食材
+        /// </summary>
+        Task<RecipeDto> UpdateRecipeIngredientAsync(Guid id, Guid ingredientId, UpdateRecipeIngredientDto dto);
+        
+        /// <summary>
+        /// 替换所有烹饪步骤
+        /// </summary>
+        Task<RecipeDto> ReplaceCookingStepsAsync(Guid id, List<CreateRecipeCookingStepDto> cookingSteps);
+        
+        /// <summary>
         /// 更新菜式基本信息
         /// </summary>
         Task<RecipeDto> UpdateRecipeBasicInfoAsync(UpdateRecipeDto dto);
@@ -62,11 +87,11 @@ namespace FitBites.Application.Services.Interfaces
         /// <summary>
         /// 获取推荐菜式列表
         /// </summary>
-        Task<List<RecipeDto>> GetRecommendedRecipesAsync(int count = 10);
+        Task<List<RecipeDto>> GetRecommendedRecipesAsync(int count);
         
         /// <summary>
         /// 分页获取菜式列表
         /// </summary>
-        Task<PaginationResponseDto<RecipeDto>> GetRecipeListAsync(int page = 1, int pageSize = 10, string keyword = null);
+        Task<PaginationResponseDto<RecipeDto>> GetRecipeListAsync(int page, int pageSize, string keyword);
     }
 } 

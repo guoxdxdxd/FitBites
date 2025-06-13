@@ -90,7 +90,7 @@ namespace FitBites.Domain.IRepositories
         /// </summary>
         /// <param name="count">获取数量</param>
         /// <returns>菜式列表</returns>
-        Task<IEnumerable<Recipe>> GetRecommendedRecipesAsync(int count = 10);
+        Task<List<Recipe>> GetRecommendedRecipesAsync(int count = 10);
         
         /// <summary>
         /// 根据关键词搜索菜式
@@ -152,5 +152,45 @@ namespace FitBites.Domain.IRepositories
         /// 获取菜式总数
         /// </summary>
         Task<int> GetRecipesCountAsync(RecipeSource? source = null, Guid? sourceId = null, string keyword = null);
+        
+        /// <summary>
+        /// 分页获取菜式列表
+        /// </summary>
+        /// <param name="page">页码</param>
+        /// <param name="pageSize">每页大小</param>
+        /// <param name="keyword">关键词</param>
+        /// <returns>分页结果</returns>
+        Task<PaginationResult<Recipe>> GetRecipeListAsync(int page, int pageSize, string keyword);
+    }
+    
+    /// <summary>
+    /// 分页结果
+    /// </summary>
+    public class PaginationResult<T>
+    {
+        /// <summary>
+        /// 当前页项目
+        /// </summary>
+        public List<T> Items { get; set; } = new List<T>();
+        
+        /// <summary>
+        /// 总记录数
+        /// </summary>
+        public int TotalCount { get; set; }
+        
+        /// <summary>
+        /// 总页数
+        /// </summary>
+        public int TotalPages { get; set; }
+        
+        /// <summary>
+        /// 是否有下一页
+        /// </summary>
+        public bool HasNextPage { get; set; }
+        
+        /// <summary>
+        /// 是否有上一页
+        /// </summary>
+        public bool HasPrevPage { get; set; }
     }
 } 
