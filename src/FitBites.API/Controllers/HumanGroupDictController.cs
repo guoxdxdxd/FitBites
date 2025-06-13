@@ -101,12 +101,7 @@ namespace FitBites.API.Controllers
         {
             try
             {
-                if (id != dto.Id)
-                {
-                    return BadRequest(ApiResult<HumanGroupDictDto>.Fail("ID不匹配"));
-                }
-
-                var humanGroup = await _humanGroupDictService.UpdateAsync(dto);
+                var humanGroup = await _humanGroupDictService.UpdateAsync(id, dto);
                 return Ok(ApiResult<HumanGroupDictDto>.Success(humanGroup));
             }
             catch (Exception ex)

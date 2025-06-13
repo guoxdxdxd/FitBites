@@ -33,9 +33,10 @@ namespace FitBites.Application.Services.Interfaces
         /// <summary>
         /// 更新人群标签
         /// </summary>
+        /// <param name="id">标签ID</param>
         /// <param name="dto">更新人群标签DTO</param>
         /// <returns>更新后的人群标签</returns>
-        Task<HumanGroupDictDto> UpdateAsync(UpdateHumanGroupDictDto dto);
+        Task<HumanGroupDictDto> UpdateAsync(Guid id, UpdateHumanGroupDictDto dto);
 
         /// <summary>
         /// 删除人群标签

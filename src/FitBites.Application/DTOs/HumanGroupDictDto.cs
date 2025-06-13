@@ -55,11 +55,6 @@ namespace FitBites.Application.DTOs
     public class UpdateHumanGroupDictDto
     {
         /// <summary>
-        /// ID
-        /// </summary>
-        public Guid Id { get; set; }
-
-        /// <summary>
         /// 标签名称（如：孕妇、糖尿病人）
         /// </summary>
         public string Name { get; set; }

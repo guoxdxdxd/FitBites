@@ -73,18 +73,19 @@ namespace FitBites.Application.Services
         /// <summary>
         /// 更新人群标签
         /// </summary>
+        /// <param name="id">标签ID</param>
         /// <param name="dto">更新人群标签DTO</param>
         /// <returns>更新后的人群标签</returns>
-        public async Task<HumanGroupDictDto> UpdateAsync(UpdateHumanGroupDictDto dto)
+        public async Task<HumanGroupDictDto> UpdateAsync(Guid id, UpdateHumanGroupDictDto dto)
         {
-            var entity = await _humanGroupDictRepository.GetByIdAsync(dto.Id);
+            var entity = await _humanGroupDictRepository.GetByIdAsync(id);
             if (entity == null)
             {
-                throw new ApplicationException($"ID为 '{dto.Id}' 的人群标签不存在");
+                throw new ApplicationException($"ID为 '{id}' 的人群标签不存在");
             }
 
             // 检查名称是否已存在
-            if (await _humanGroupDictRepository.ExistsByNameAsync(dto.Name, dto.Id))
+            if (await _humanGroupDictRepository.ExistsByNameAsync(dto.Name, id))
             {
                 throw new ApplicationException($"人群标签名称 '{dto.Name}' 已存在");
             }
