@@ -291,8 +291,5 @@ namespace FitBites.Domain.Entities
             return $"{prefix}{noun}{random.Next(10, 100)}";
         }
         
-
-
-
     }
 }
