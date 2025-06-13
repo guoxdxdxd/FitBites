@@ -44,5 +44,10 @@ namespace FitBites.Application.Services.Interfaces
         /// <param name="id">标签ID</param>
         /// <returns>任务</returns>
         Task DeleteAsync(Guid id);
+        
+        /// <summary>
+        /// 刷新人群标签缓存
+        /// </summary>
+        Task RefreshCacheAsync();
     }
 } 

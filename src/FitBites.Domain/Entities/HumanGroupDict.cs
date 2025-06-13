@@ -1,11 +1,12 @@
 using FitBites.Domain.Entities.Base;
+using FitBites.Domain.Events;
 
 namespace FitBites.Domain.Entities
 {
     /// <summary>
     /// 人群标签字典实体
     /// </summary>
-    public class HumanGroupDict : EntityBase
+    public class HumanGroupDict : AggregateRoot
     {
         /// <summary>
         /// 构造函数，初始化集合
@@ -66,7 +67,7 @@ namespace FitBites.Domain.Entities
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("人群标签名称不能为空", nameof(name));
 
-            return new HumanGroupDict
+            var instance = new HumanGroupDict
             {
                 Id = Guid.NewGuid(),
                 Name = name,
@@ -74,6 +75,11 @@ namespace FitBites.Domain.Entities
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
+            
+            // 添加领域事件
+            instance.AddDomainEvent(new HumanGroupChangedEvent(instance.Id));
+            
+            return instance;
         }
 
         /// <summary>
@@ -89,6 +95,9 @@ namespace FitBites.Domain.Entities
             Name = name;
             Description = description;
             UpdatedAt = DateTime.Now;
+            
+            // 添加领域事件
+            AddDomainEvent(new HumanGroupChangedEvent(Id));
         }
     }
 } 
