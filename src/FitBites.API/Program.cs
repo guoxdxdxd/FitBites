@@ -34,7 +34,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             // 配置默认使用AsSplitQuery，提高关联查询性能
             mySqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
         }
-    );
+    ).UseLazyLoadingProxies();
 });
 
 // 配置Redis
