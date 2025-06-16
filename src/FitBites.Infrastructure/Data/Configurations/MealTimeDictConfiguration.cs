@@ -29,6 +29,10 @@ namespace FitBites.Infrastructure.Data.Configurations
             builder.Property(m => m.Description)
                 .HasMaxLength(200);
 
+            // 软删除字段
+            builder.Property(m => m.IsDeleted)
+                .IsRequired();
+
             // 索引配置
             builder.HasIndex(m => m.Code).IsUnique();
             builder.HasIndex(m => m.Name);

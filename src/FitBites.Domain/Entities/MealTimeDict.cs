@@ -48,5 +48,41 @@ namespace FitBites.Domain.Entities
         /// 餐次说明
         /// </summary>
         public string Description { get; private set; }
+
+        /// <summary>
+        /// 是否已删除（软删除）
+        /// </summary>
+        public bool IsDeleted { get; private set; }
+
+        /// <summary>
+        /// 修改餐次信息
+        /// </summary>
+        public void Update(string name, string description)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new DomainException("餐次名称不能为空");
+            Name = name;
+            Description = description;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// 修改餐次说明
+        /// </summary>
+        public void ChangeDescription(string description)
+        {
+            Description = description;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// 软删除
+        /// </summary>
+        public void Disable()
+        {
+            if (IsDeleted) return;
+            IsDeleted = true;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 } 
