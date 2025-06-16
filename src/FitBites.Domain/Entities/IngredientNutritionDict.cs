@@ -63,5 +63,42 @@ namespace FitBites.Domain.Entities
         /// 菜谱营养集合
         /// </summary>
         public virtual ICollection<MealPlanNutrition> MealPlanNutritions { get; private set; }
+
+        /// <summary>
+        /// 创建营养成分字典工厂方法
+        /// </summary>
+        public static IngredientNutritionDict Create(string name, string unit, string description)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new DomainException("成分名称不能为空");
+            if (string.IsNullOrWhiteSpace(unit))
+                throw new DomainException("单位不能为空");
+            return new IngredientNutritionDict
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Unit = unit,
+                Description = description,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IngredientNutritions = new HashSet<IngredientNutrition>(),
+                MealPlanNutritions = new HashSet<MealPlanNutrition>()
+            };
+        }
+
+        /// <summary>
+        /// 更新营养成分字典
+        /// </summary>
+        public void Update(string name, string unit, string description)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new DomainException("成分名称不能为空");
+            if (string.IsNullOrWhiteSpace(unit))
+                throw new DomainException("单位不能为空");
+            Name = name;
+            Unit = unit;
+            Description = description;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 } 
