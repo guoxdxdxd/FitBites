@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FitBites.Core.Enums;
 using FitBites.Domain.Entities.Base;
 
 namespace FitBites.Domain.Entities
@@ -63,5 +64,32 @@ namespace FitBites.Domain.Entities
         /// 角色直接关联的权限映射集合
         /// </summary>
         public virtual ICollection<PermissionMapping> PermissionMappings { get; private set; }
+
+        /// <summary>
+        /// 更新角色名称和描述
+        /// </summary>
+        /// <param name="roleName">新名称</param>
+        /// <param name="description">新描述</param>
+        public void Update(string roleName, string description)
+        {
+            RoleName = roleName;
+            Description = description;
+            UpdatedAt = DateTime.Now;
+        }
+
+        /// <summary>
+        /// 设置角色权限
+        /// </summary>
+        /// <param name="permissionIds">权限ID列表</param>
+        public void SetPermissions(IEnumerable<Guid> permissionIds)
+        {
+            PermissionMappings.Clear();
+            foreach (var pid in permissionIds)
+            {
+                PermissionMappings.Add(new PermissionMapping(ObjectType.Role, Id, pid, true, null));
+            }
+            UpdatedAt = DateTime.Now;
+        }
+
     }
 } 
