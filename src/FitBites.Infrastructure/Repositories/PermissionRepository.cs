@@ -50,9 +50,9 @@ namespace FitBites.Infrastructure.Repositories
         /// <param name="roleId">角色ID</param>
         /// <param name="checkExpiration">是否检查过期时间</param>
         /// <returns>角色权限列表</returns>
-        public async Task<List<Permission>> GetRolePermissionsAsync(Guid roleId, bool checkExpiration = true)
+        public Task<List<Permission>> GetRolePermissionsAsync(Guid roleId, bool checkExpiration = true)
         {
-            return await _dbContext.Set<PermissionMapping>()
+            return  _dbContext.Set<PermissionMapping>()
                 .Where(pm => pm.ObjectType == ObjectType.Role && pm.ObjectId == roleId && pm.Status)
                 .WhereIf(checkExpiration, pm => pm.ExpireTime == null || pm.ExpireTime > DateTime.Now)
                 .Include(pm => pm.Permission)
@@ -63,12 +63,22 @@ namespace FitBites.Infrastructure.Repositories
 
         public Task<List<Permission>> GetUserPermissionsAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            return _dbContext.Set<PermissionMapping>()
+                .Include(o => o.Permission)
+                .Where(o => o.ObjectId == userId)
+                .Where(o => o.ObjectType == ObjectType.User)
+                .Select(o => o.Permission)
+                .ToListAsync();
         }
 
         public Task<List<Permission>> GetRolePermissionsAsync(Guid roleId)
         {
-            throw new NotImplementedException();
+            return _dbContext.Set<PermissionMapping>()
+                .Include(o => o.Permission)
+                .Where(o => o.ObjectId == roleId)
+                .Where(o => o.ObjectType == ObjectType.Role)
+                .Select(o => o.Permission)
+                .ToListAsync();
         }
     }
 } 
