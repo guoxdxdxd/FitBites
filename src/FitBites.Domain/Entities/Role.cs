@@ -83,11 +83,21 @@ namespace FitBites.Domain.Entities
         /// <param name="permissionIds">权限ID列表</param>
         public void SetPermissions(IEnumerable<Guid> permissionIds)
         {
-            PermissionMappings.Clear();
-            foreach (var pid in permissionIds)
+            //移除
+            var newPids = permissionIds.Where(pid => PermissionMappings.All(i => i.PermissionId != pid)).ToList();
+            var delPers = PermissionMappings.Where(o => !permissionIds.Contains(o.PermissionId)).ToList();
+            foreach (var delPer in delPers)
             {
-                PermissionMappings.Add(new PermissionMapping(ObjectType.Role, Id, pid, true, null));
+                PermissionMappings.Remove(delPer);
             }
+
+            //新增
+            var newPers = newPids.Select(pid => new PermissionMapping(ObjectType.Role, Id, pid, true, null));
+            foreach (var newPer in newPers)
+            {
+                PermissionMappings.Add(newPer);
+            }
+            
             UpdatedAt = DateTime.Now;
         }
 
